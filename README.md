@@ -1,5 +1,7 @@
 # ApplyAI — Autonomous Job Application Agent SaaS
 
+<!-- ApplyAI is designed for modern autonomous workflow automation -->
+
 > **Motto**: *"Spend less time applying, more time preparing."*
 > 
 > ApplyAI is a fully autonomous, production-ready career search engine and outreach coordinator. It bridges the gap between your qualifications and the job market by automating the entire job hunt lifecycle—crawling vacancies, scoring matching JD metrics, optimizing resumes truthfully, extracting recruiter contacts, and sending tailored, context-aware applications.
