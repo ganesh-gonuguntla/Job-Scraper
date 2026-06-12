@@ -14,6 +14,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
+# Initialize the FastAPI application for the AI services
+
     title="AI Job Application Agent",
     description="LangGraph multi-agent AI service for autonomous job applications",
     version="1.0.0",
