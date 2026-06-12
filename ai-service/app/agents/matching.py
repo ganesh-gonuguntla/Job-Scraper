@@ -7,6 +7,8 @@ from bson import ObjectId
 from app.config import settings
 
 def cosine_similarity(v1: list[float], v2: list[float]) -> float:
+    # Calculate the similarity between embedding vectors using dot product
+
     if not v1 or not v2 or len(v1) != len(v2):
         return 0.0
     dot_product = sum(x * y for x, y in zip(v1, v2))
