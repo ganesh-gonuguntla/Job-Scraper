@@ -7,6 +7,8 @@ import AgentLog from '../models/AgentLog.js';
 const router = Router();
 
 router.patch('/', authenticate, async (req, res, next) => {
+  // Patch settings route for auto-apply parameters and App Passwords
+
   try {
     const { auto_apply, review_before_send, follow_up_days, match_threshold, smtp_pass } = req.body;
     const update = {};
