@@ -97,6 +97,8 @@ Return your response as a valid JSON object matching this structure:
         return None
 
 async def search_jobs(user_id: str) -> dict:
+    # Dynamic web crawling method searching boards like Lever and Greenhouse
+
     profile = await database.db.profiles.find_one({"user_id": ObjectId(user_id)})
     if not profile:
         return {"success": False, "message": "No profile found."}
