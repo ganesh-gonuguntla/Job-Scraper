@@ -14,6 +14,8 @@ import applicationsRoutes from './routes/applications.js';
 import settingsRoutes from './routes/settings.js';
 
 dotenv.config();
+// Configure environment variables from .env file
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
