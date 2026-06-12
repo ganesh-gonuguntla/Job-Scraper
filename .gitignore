@@ -6,10 +6,20 @@ __pycache__/
 venv/
 env/
 
-# Environment
+# Secrets, API keys and Credentials
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+*.pem
+*.key
+*.pub
+*.pfx
+*.p12
+credentials.json
+client_secret.json
+client_secrets.json
+secrets/
+keys/
 
 # Build outputs
 dist/
