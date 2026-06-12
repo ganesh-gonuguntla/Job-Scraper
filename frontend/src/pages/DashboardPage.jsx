@@ -28,6 +28,8 @@ import { useAuthStore } from '@/store/authStore';
 import api from '@/api/client';
 
 export default function DashboardPage() {
+  // DashboardPage aggregates all user settings, matching roles, and run logs
+
   const user = useAuthStore((s) => s.user);
   
   // Tabs: 'overview', 'matches', 'applications', 'logs', 'settings'
