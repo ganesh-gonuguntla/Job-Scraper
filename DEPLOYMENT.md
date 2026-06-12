@@ -1,4 +1,6 @@
-# Deployment Guide — Phase 10
+# Deployment Guide
+
+<!-- Deployment instructions for Render, Railway, and Vercel platforms --> — Phase 10
 
 This guide details the step-by-step process of deploying the monorepo services to production environments.
 
