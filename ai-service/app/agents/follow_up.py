@@ -7,6 +7,7 @@ from bson import ObjectId
 import google.generativeai as genai
 from app.config import settings
 from app.agents.apply_sender import send_smtp_email
+from app.utils import retry_gemini_call, handle_gemini_error
 
 async def run_followups(user_id: str | None = None) -> dict:
     # Get all users if user_id is None
@@ -94,13 +95,24 @@ Return your response as a valid JSON object matching this structure:
   "body": "Body of follow-up email"
 }}
 """
-                response = model.generate_content(
-                    prompt,
-                    generation_config={"response_mime_type": "application/json"}
+                response = await retry_gemini_call(
+                    "FollowUp",
+                    "generate_followup",
+                    lambda: model.generate_content(
+                        prompt,
+                        generation_config={"response_mime_type": "application/json"}
+                    )
                 )
-                followup_data = json.loads(response.text)
+                
+                if response:
+                    followup_data = json.loads(response.text)
+                else:
+                    followup_data = {
+                        "subject": f"Following up: Application for {job_title} - {candidate_name}",
+                        "body": f"Dear {recruiter_name},\n\nI hope you are well.\n\nI am writing to check in briefly on my application for the {job_title} position.\n\nI remain very interested in the opportunity at {company}. Please let me know if you require any further information.\n\nBest regards,\n{candidate_name}"
+                    }
             except Exception as e:
-                print(f"Gemini follow-up generation failed: {str(e)}")
+                print(f"Follow-up generation failed: {str(e)}")
                 followup_data = {
                     "subject": f"Following up: Application for {job_title} - {candidate_name}",
                     "body": f"Dear {recruiter_name},\n\nI hope you are well.\n\nI am writing to check in briefly on my application for the {job_title} position.\n\nI remain very interested in the opportunity at {company}. Please let me know if you require any further information.\n\nBest regards,\n{candidate_name}"

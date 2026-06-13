@@ -1,17 +1,15 @@
 import { Router } from 'express';
 import axios from 'axios';
 import { authenticate } from '../middleware/auth.js';
+import { validateBody, matchSchema } from '../middleware/validation.js';
 import Match from '../models/Match.js';
 import Job from '../models/Job.js';
 
 const router = Router();
 
-router.post('/', authenticate, async (req, res, next) => {
+router.post('/', authenticate, validateBody(matchSchema), async (req, res, next) => {
   try {
     const { job_id } = req.body;
-    if (!job_id) {
-      return res.status(400).json({ success: false, message: 'job_id is required' });
-    }
 
     const aiUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
     const { data } = await axios.post(`${aiUrl}/jobs/match`, {

@@ -9,6 +9,7 @@ import app.database as database
 from bson import ObjectId
 import google.generativeai as genai
 from app.config import settings
+from app.utils import retry_gemini_call
 
 async def fetch_search_results(query: str) -> list:
     url = "https://html.duckduckgo.com/html/"
@@ -59,7 +60,7 @@ async def parse_job_page(url: str) -> dict | None:
             if len(page_text) < 100:
                 return None
                 
-            # Use Gemini to clean and structure the data
+            # Use Gemini to clean and structure the data with retry logic
             genai.configure(api_key=settings.gemini_api_key)
             model = genai.GenerativeModel("gemini-2.5-flash")
             
@@ -81,10 +82,16 @@ Return your response as a valid JSON object matching this structure:
   "skills_required": ["Skill1", "Skill2"]
 }}
 """
-            response = model.generate_content(
-                prompt,
-                generation_config={"response_mime_type": "application/json"}
+            response = await retry_gemini_call(
+                "JobSearch",
+                "parse_job_page",
+                lambda: model.generate_content(
+                    prompt,
+                    generation_config={"response_mime_type": "application/json"}
+                )
             )
+            if not response:
+                return None
             data = json.loads(response.text)
             
             if not data.get("title") or not data.get("company"):

@@ -6,6 +6,7 @@ import app.database as database
 from bson import ObjectId
 import google.generativeai as genai
 from app.config import settings
+from app.utils import retry_gemini_call, handle_gemini_error
 
 async def create_email(user_id: str, match_id: str) -> dict:
     match_doc = await database.db.matches.find_one({"_id": ObjectId(match_id)})
@@ -37,7 +38,7 @@ async def create_email(user_id: str, match_id: str) -> dict:
     recruiter_title = contact.get("designation", "Recruiter") if contact else "Recruiter"
     recruiter_email = contact.get("email", "") if contact else ""
 
-    # Generate via Gemini
+    # Generate via Gemini with retry logic
     email_data = {}
     try:
         genai.configure(api_key=settings.gemini_api_key)
@@ -70,14 +71,18 @@ Return your response as a valid JSON object matching this structure:
   "body": "Body of the email (use standard newlines \\n)"
 }}
 """
-        response = model.generate_content(
-            prompt,
-            generation_config={"response_mime_type": "application/json"}
+        response = await retry_gemini_call(
+            "EmailWriter",
+            "generate_email",
+            lambda: model.generate_content(
+                prompt,
+                generation_config={"response_mime_type": "application/json"}
+            )
         )
-        email_data = json.loads(response.text)
-    except Exception as e:
-        print(f"Gemini email writing failed: {str(e)}")
-        email_data = {
+        if response:
+            email_data = json.loads(response.text)
+        else:
+            email_data = {
             "subject": f"Application for {job_title} - {candidate_name}",
             "body": f"Dear {recruiter_name},\n\nI am writing to express my strong interest in the {job_title} role at {company}.\n\nWith my background in {candidate_skills.split(',')[0]} and related technologies, I believe I can make a strong contribution to your team.\n\nPlease find my optimized resume attached.\n\nBest regards,\n{candidate_name}"
         }

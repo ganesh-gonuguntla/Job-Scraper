@@ -8,19 +8,28 @@ import google.generativeai as genai
 from app.config import settings
 
 def generate_embedding(text: str) -> list[float]:
+    """Generate embeddings with retry logic and exponential backoff."""
     if not text or not text.strip():
-        return [0.0] * 768
-    try:
-        genai.configure(api_key=settings.gemini_api_key)
-        result = genai.embed_content(
-            model="models/text-embedding-004",
-            content=text[:10000],
-            task_type="retrieval_document"
-        )
-        return result['embedding']
-    except Exception as e:
-        print(f"Gemini embedding generation failed: {str(e)}")
-        return [0.0] * 768
+        return [0.0] * settings.embedding_dimensions
+    
+    import time
+    for attempt in range(settings.max_gemini_retries):
+        try:
+            genai.configure(api_key=settings.gemini_api_key)
+            result = genai.embed_content(
+                model=settings.embedding_model,
+                content=text[:10000],
+                task_type="retrieval_document"
+            )
+            return result['embedding']
+        except Exception as e:
+            if attempt < settings.max_gemini_retries - 1:
+                delay = settings.gemini_retry_delay * (2 ** attempt)  # exponential backoff
+                print(f"[RETRY {attempt + 1}] Gemini embedding failed: {str(e)}. Retrying in {delay}s...")
+                time.sleep(delay)
+            else:
+                print(f"[FAILED] Gemini embedding failed after {settings.max_gemini_retries} attempts: {str(e)}")
+                return [0.0] * settings.embedding_dimensions
 
 def extract_text(file_path: str) -> str:
     ext = os.path.splitext(file_path)[1].lower()

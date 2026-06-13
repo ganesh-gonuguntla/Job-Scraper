@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import axios from 'axios';
 import { authenticate } from '../middleware/auth.js';
+import { validateBody, applicationSchema } from '../middleware/validation.js';
 import Application from '../models/Application.js';
 
 const router = Router();
 
-router.post('/', authenticate, async (req, res, next) => {
+router.post('/', authenticate, validateBody(applicationSchema), async (req, res, next) => {
   try {
     const { match_id } = req.body;
     const aiUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';

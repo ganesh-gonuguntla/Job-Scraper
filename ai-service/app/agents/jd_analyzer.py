@@ -2,11 +2,13 @@
 
 import re
 import datetime
+import json
 import app.database as database
 from bson import ObjectId
 import google.generativeai as genai
 from app.config import settings
 from app.agents.resume_intelligence import generate_embedding
+from app.utils import retry_gemini_call, handle_gemini_error
 
 async def analyze_jd(job_id: str) -> dict:
     job = await database.db.jobs.find_one({"_id": ObjectId(job_id)})
@@ -17,7 +19,7 @@ async def analyze_jd(job_id: str) -> dict:
     title = job.get("title", "")
     company = job.get("company", "")
 
-    # Extract info via Gemini
+    # Extract info via Gemini with retry logic
     parsed_jd = {}
     try:
         genai.configure(api_key=settings.gemini_api_key)
@@ -51,14 +53,28 @@ Your response must be a valid JSON object matching this structure:
   }}
 }}
 """
-        response = model.generate_content(
-            prompt,
-            generation_config={"response_mime_type": "application/json"}
+        response = await retry_gemini_call(
+            "JDAnalyzer",
+            "analyze_jd",
+            lambda: model.generate_content(
+                prompt,
+                generation_config={"response_mime_type": "application/json"}
+            )
         )
-        import json
-        parsed_jd = json.loads(response.text)
+        
+        if response:
+            parsed_jd = json.loads(response.text)
+        else:
+            parsed_jd = {
+                "role_summary": title,
+                "skills_required": job.get("skills_required", []),
+                "experience_level": "Mid",
+                "experience_years": 2,
+                "responsibilities": [],
+                "contact": {"found": False, "hr_name": None, "designation": None, "email": None, "apply_instructions": None}
+            }
     except Exception as e:
-        print(f"Gemini JD analysis failed: {str(e)}")
+        print(f"JD analysis failed: {str(e)}")
         # Simple fallback
         parsed_jd = {
             "role_summary": title,

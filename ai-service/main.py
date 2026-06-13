@@ -3,11 +3,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.database import connect_db, close_db
+from app.validate_env import validate_environment, validate_mongodb_uri, validate_gemini_key
 from app.routes import agent, resume, jobs, recruiter, email, apply, followup
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Validate environment on startup
+    validate_environment()
+    validate_mongodb_uri()
+    validate_gemini_key()
+    
     await connect_db()
     yield
     await close_db()

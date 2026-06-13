@@ -6,6 +6,7 @@ import app.database as database
 from bson import ObjectId
 import google.generativeai as genai
 from app.config import settings
+from app.utils import retry_gemini_call, handle_gemini_error
 
 async def optimize_resume(match_id: str) -> dict:
     match_doc = await database.db.matches.find_one({"_id": ObjectId(match_id)})
@@ -30,7 +31,7 @@ async def optimize_resume(match_id: str) -> dict:
     title = job.get("title", "")
     company = job.get("company", "")
 
-    # Optimization call using Gemini
+    # Optimization call using Gemini with retry logic
     optimized_text = ""
     try:
         genai.configure(api_key=settings.gemini_api_key)
@@ -60,10 +61,27 @@ Target Job Description:
 
 Generate the optimized resume in Markdown. Start directly with the Candidate's Name (from the resume) as the header, then a professional summary, core technical skills (matching skills listed first), professional experience, projects, and education. Do not output conversational filler.
 """
-        response = model.generate_content(prompt)
-        optimized_text = response.text.strip()
+        response = await retry_gemini_call(
+            "ResumeOptimizer",
+            "optimize_resume",
+            lambda: model.generate_content(prompt)
+        )
+        if response:
+            optimized_text = response.text.strip()
+        else:
+            # Fallback text
+            skills_str = ", ".join(parsed_resume.get("skills", []))
+            optimized_text = f"""# {parsed_resume.get('name', 'Candidate')}
+Skills: {skills_str}
+
+## Objective
+To apply my experience to the {title} role at {company}.
+
+## Professional Experience
+(Please see original resume for detailed timeline. Tailored for compatibility.)
+"""
     except Exception as e:
-        print(f"Gemini resume optimization failed: {str(e)}")
+        print(f"Resume optimization failed: {str(e)}")
         # Simple fallback text
         skills_str = ", ".join(parsed_resume.get("skills", []))
         optimized_text = f"""# {parsed_resume.get('name', 'Candidate')}

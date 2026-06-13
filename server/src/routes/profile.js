@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import axios from 'axios';
 import { authenticate } from '../middleware/auth.js';
+import { validateBody, skillsSchema } from '../middleware/validation.js';
 import Profile from '../models/Profile.js';
 import Resume from '../models/Resume.js';
 
@@ -33,7 +34,7 @@ const upload = multer({
   },
 });
 
-router.post('/skills', authenticate, async (req, res, next) => {
+router.post('/skills', authenticate, validateBody(skillsSchema), async (req, res, next) => {
   try {
     const { skills, experience, location, target_roles } = req.body;
 

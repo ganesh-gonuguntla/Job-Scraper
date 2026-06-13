@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import axios from 'axios';
 import { authenticate } from '../middleware/auth.js';
+import { validateBody, settingsSchema } from '../middleware/validation.js';
 import Profile from '../models/Profile.js';
 import AgentLog from '../models/AgentLog.js';
 
 const router = Router();
 
-router.patch('/', authenticate, async (req, res, next) => {
+router.patch('/', authenticate, validateBody(settingsSchema), async (req, res, next) => {
   // Patch settings route for auto-apply parameters and App Passwords
 
   try {
